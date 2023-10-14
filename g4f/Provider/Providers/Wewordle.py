@@ -13,10 +13,13 @@ needs_auth = False
 
 
 def _create_completion(model: str, messages: list, stream: bool, **kwargs):
-    base = ''
-    for message in messages:
-        base += '%s: %s\n' % (message['role'], message['content'])
-    base += 'assistant:'
+    base = (
+        ''.join(
+            '%s: %s\n' % (message['role'], message['content'])
+            for message in messages
+        )
+        + 'assistant:'
+    )
     # randomize user id and app id
     _user_id = ''.join(random.choices(f'{string.ascii_lowercase}{string.digits}', k=16))
     _app_id = ''.join(random.choices(f'{string.ascii_lowercase}{string.digits}', k=31))
@@ -29,7 +32,7 @@ def _create_completion(model: str, messages: list, stream: bool, **kwargs):
         'Connection':'keep-alive'
         # user agent android client
         # 'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 10; SM-G975F Build/QP1A.190711.020)',
-        
+
     }
     data = {
         "user": _user_id,

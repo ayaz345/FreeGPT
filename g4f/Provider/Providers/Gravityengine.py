@@ -19,8 +19,9 @@ def _create_completion(model: str, messages: list, stream: bool, temperature: fl
         'presence_penalty': 0,
         'messages': messages,
     }
-    response = requests.post(url + '/api/openai/v1/chat/completions',
-                             json=data, stream=True)
+    response = requests.post(
+        f'{url}/api/openai/v1/chat/completions', json=data, stream=True
+    )
 
     yield response.json()['choices'][0]['message']['content']
 

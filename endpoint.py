@@ -37,23 +37,22 @@ def chat_completions():
             'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789', k=28))
 
         return {
-            'id': 'chatcmpl-%s' % completion_id,
+            'id': f'chatcmpl-{completion_id}',
             'object': 'chat.completion',
             'created': completion_timestamp,
             'model': model,
             'usage': {
                 'prompt_tokens': 0,
                 'completion_tokens': 0,
-                'total_tokens': 0
+                'total_tokens': 0,
             },
-            'choices': [{
-                'message': {
-                    'role': 'assistant',
-                    'content': response
-                },
-                'finish_reason': 'stop',
-                'index': 0
-            }]
+            'choices': [
+                {
+                    'message': {'role': 'assistant', 'content': response},
+                    'finish_reason': 'stop',
+                    'index': 0,
+                }
+            ],
         }
 
     def stream():

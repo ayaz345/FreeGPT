@@ -70,7 +70,7 @@ class Client:
         return {key: param['value'] for key, param in vercel_models[model_id]['parameters'].items()}
 
     def generate(self, model_id: str, prompt: str, params: dict = {}):
-        if not ':' in model_id:
+        if ':' not in model_id:
             model_id = models[model_id]
 
         defaults = self.get_default_params(model_id)
@@ -144,16 +144,15 @@ class Client:
 def _create_completion(model: str, messages: list, stream: bool, **kwargs):
     
     conversation = 'This is a conversation between a human and a language model. The language model should always respond as the assistant, referring to the past history of messages if needed.\n'
-    
+
     for message in messages:
         conversation += '%s: %s\n' % (message['role'], message['content'])
-    
-    conversation += 'assistant: '
-    
-    completion = Client().generate(model, conversation)
-    
-    for token in completion:
-        yield token
 
-params = f'g4f.Providers.{os.path.basename(__file__)[:-3]} supports: ' + \
-    '(%s)' % ', '.join([f"{name}: {get_type_hints(_create_completion)[name].__name__}" for name in _create_completion.__code__.co_varnames[:_create_completion.__code__.co_argcount]])
+    conversation += 'assistant: '
+
+    yield from Client().generate(model, conversation)
+
+params = (
+    f'g4f.Providers.{os.path.basename(__file__)[:-3]} supports: '
+    + f"""({', '.join([f"{name}: {get_type_hints(_create_completion)[name].__name__}" for name in _create_completion.__code__.co_varnames[:_create_completion.__code__.co_argcount]])})"""
+)

@@ -40,7 +40,14 @@ def _create_completion(model: str, messages: list, stream: bool, **kwargs):
   conversation += 'assistant: '
   _uuid = str(uuid.uuid4())
   session = requests.Session()
-  r = session.post("https://claude.ai/api/organizations/"+user+"/chat_conversations",data=json.dumps({"uuid":_uuid ,"name": ""}),headers=h1)
+  r = session.post(
+      f"https://claude.ai/api/organizations/{user}/chat_conversations",
+      data=json.dumps({
+          "uuid": _uuid,
+          "name": ""
+      }),
+      headers=h1,
+  )
   r = session.post("https://claude.ai/api/append_message",data=json.dumps({
     "completion": {
       "prompt": conversation,
@@ -63,9 +70,14 @@ def _create_completion(model: str, messages: list, stream: bool, **kwargs):
            yield str(data['completion'].encode('utf-8').decode('utf-8') )
         except:
            pass
-  r = session.delete("https://claude.ai/api/organizations/"+user+"/chat_conversations/"+_uuid,headers=h1)
+  r = session.delete(
+      f"https://claude.ai/api/organizations/{user}/chat_conversations/{_uuid}",
+      headers=h1,
+  )
   
 
 
-params = f'g4f.Providers.{os.path.basename(__file__)[:-3]} supports: ' + \
-    '(%s)' % ', '.join([f"{name}: {get_type_hints(_create_completion)[name].__name__}" for name in _create_completion.__code__.co_varnames[:_create_completion.__code__.co_argcount]])
+params = (
+    f'g4f.Providers.{os.path.basename(__file__)[:-3]} supports: ' +
+    f"""({', '.join([f"{name}: {get_type_hints(_create_completion)[name].__name__}" for name in _create_completion.__code__.co_varnames[:_create_completion.__code__.co_argcount]])})"""
+)

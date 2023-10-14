@@ -9,11 +9,13 @@ needs_auth = False
 
 def _create_completion(model: str, messages: list, stream: bool, **kwargs):
     try:
-        base = ''
-        for message in messages:
-            base += '%s: %s\n' % (message['role'], message['content'])
-        base += 'assistant:'
-
+        base = (
+            ''.join(
+                '%s: %s\n' % (message['role'], message['content'])
+                for message in messages
+            )
+            + 'assistant:'
+        )
         headers = {
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
         }
