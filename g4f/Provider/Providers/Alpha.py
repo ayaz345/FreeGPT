@@ -44,5 +44,7 @@ def _create_completion(model: str, messages: list, stream: bool, **kwargs):
                 # Handle the invalid JSON case
                 print(f"Invalid JSON: {data_str}")
 
-params = f'g4f.Providers.{os.path.basename(__file__)[:-3]} supports: ' + \
-    '(%s)' % ', '.join([f"{name}: {get_type_hints(_create_completion)[name].__name__}" for name in _create_completion.__code__.co_varnames[:_create_completion.__code__.co_argcount]])
+params = (
+    f'g4f.Providers.{os.path.basename(__file__)[:-3]} supports: '
+    + f"""({', '.join([f"{name}: {get_type_hints(_create_completion)[name].__name__}" for name in _create_completion.__code__.co_varnames[:_create_completion.__code__.co_argcount]])})"""
+)

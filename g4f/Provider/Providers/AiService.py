@@ -10,11 +10,13 @@ needs_auth = False
 
 def _create_completion(model: str, messages: list, stream: bool, **kwargs):
     try:
-        base = ''
-        for message in messages:
-            base += '%s: %s\n' % (message['role'], message['content'])
-        base += 'assistant:'
-
+        base = (
+            ''.join(
+                '%s: %s\n' % (message['role'], message['content'])
+                for message in messages
+            )
+            + 'assistant:'
+        )
         headers = {
             "accept": "*/*",
             "content-type": "text/plain;charset=UTF-8",
@@ -27,7 +29,7 @@ def _create_completion(model: str, messages: list, stream: bool, **kwargs):
             "input": base
         }
         response = requests.post(url, headers=headers, json=data, stream=True)
-        
+
         if response.status_code == 200:
             _json = response.json()
             if 'data' in _json:

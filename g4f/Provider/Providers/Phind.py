@@ -14,11 +14,13 @@ model = ["gpt-3.5-turbo"]
 url = 'https://www.phind.com/'
 
 def _create_completion(model: str, messages: list, stream: bool, **kwargs):
-    conversation = ''
-    for message in messages:
-        conversation += '%s: %s; ' % (message['role'], message['content'])
-    
-    conversation += 'assistant: '
+    conversation = (
+        ''.join(
+            f"{message['role']}: {message['content']}; "
+            for message in messages
+        )
+        + 'assistant: '
+    )
     driver = webdriver.Chrome(options=options)
     driver.get(url)
     script = """
@@ -33,9 +35,9 @@ def _create_completion(model: str, messages: list, stream: bool, **kwargs):
                 "Sec-Fetch-Mode": "cors",
                 "Sec-Fetch-Site": "same-origin"
             },\n"""
-    
+
     script += f'referrer: "{url}agent?q={conversation}&source=searchbox",\n'
-    script += 'body: JSON.stringify({userInput: "'+conversation+'", messages: [], shouldRunGPT4: false}),\n'        
+    script += 'body: JSON.stringify({userInput: "'+conversation+'", messages: [], shouldRunGPT4: false}),\n'
     script += """
             method: "POST",
             mode: "cors"
@@ -44,7 +46,7 @@ def _create_completion(model: str, messages: list, stream: bool, **kwargs):
         .then(data => data)
         .catch(error => console.error(error));
     """
-    
+
     result = driver.execute_script(script)
     result = result.replace("\n", "").split("data:")
     stroke = []
@@ -53,7 +55,7 @@ def _create_completion(model: str, messages: list, stream: bool, **kwargs):
 
     if "<!DOCTYPE html>" in result[0]:
         return "ERROR"
-    
+
     for i in range(len(result)):
         try:
             x = json.loads(result[i])["choices"][0]["delta"]["content"]

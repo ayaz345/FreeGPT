@@ -21,7 +21,7 @@ def _create_completion(model: str, messages: list, stream: bool, **kwargs):
     }
 
     json_data = {
-        'prompt': 'always respond in russian | %s' % messages[-1]['content'],
+        'prompt': f"always respond in russian | {messages[-1]['content']}",
         'userId': f'#/chat/{int(time.time() * 1000)}',
         'network': True,
         'apikey': '',
@@ -31,8 +31,10 @@ def _create_completion(model: str, messages: list, stream: bool, **kwargs):
 
     response = requests.post('https://api.aichatos.cloud/api/generateStream', headers=headers, json=json_data, stream=True)
     for token in response.iter_content(chunk_size=2046):
-        if not b'always respond in russian' in token:
+        if b'always respond in russian' not in token:
             yield (token.decode('utf-8'))
 
-params = f'g4f.Providers.{os.path.basename(__file__)[:-3]} supports: ' + \
-    '(%s)' % ', '.join([f"{name}: {get_type_hints(_create_completion)[name].__name__}" for name in _create_completion.__code__.co_varnames[:_create_completion.__code__.co_argcount]])
+params = (
+    f'g4f.Providers.{os.path.basename(__file__)[:-3]} supports: '
+    + f"""({', '.join([f"{name}: {get_type_hints(_create_completion)[name].__name__}" for name in _create_completion.__code__.co_varnames[:_create_completion.__code__.co_argcount]])})"""
+)

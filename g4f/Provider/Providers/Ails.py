@@ -15,23 +15,18 @@ supports_stream = True
 needs_auth = False
 
 class Utils:
-    def hash(json_data: Dict[str, str]) -> sha256:
+    def hash(self) -> sha256:
 
         secretKey: bytearray = bytearray([79, 86, 98, 105, 91, 84, 80, 78, 123, 83,
                                          35, 41, 99, 123, 51, 54, 37, 57, 63, 103, 59, 117, 115, 108, 41, 67, 76])
 
-        base_string: str = '%s:%s:%s:%s' % (
-            json_data['t'],
-            json_data['m'],
-            'WI,2rU#_r:r~aF4aJ36[.Z(/8Rv93Rf',
-            len(json_data['m'])
-        )
-        
+        base_string: str = f"{self['t']}:{self['m']}:WI,2rU#_r:r~aF4aJ36[.Z(/8Rv93Rf:{len(self['m'])}"
+
         return hashlib.sha256(base_string.encode()).hexdigest()
 
-    def format_timestamp(timestamp: int) -> str:
+    def format_timestamp(self) -> str:
 
-        e = timestamp
+        e = self
         n = e % 10
         r = n + 1 if n % 2 == 0 else n
         return str(e - n + r)

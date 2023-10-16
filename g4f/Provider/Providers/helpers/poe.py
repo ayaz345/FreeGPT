@@ -36,8 +36,7 @@ def load_queries():
   for path in queries_path.iterdir():
     if path.suffix != ".graphql":
       continue
-    with open(path) as f:
-      queries[path.stem] = f.read()
+    queries[path.stem] = Path(path).read_text()
 
 def generate_payload(query_name, variables):
   if query_name == "recv":
@@ -86,7 +85,9 @@ def request_with_retries(method, *args, **kwargs):
   raise RuntimeError(f"Failed to download {url} too many times.")
 
 def generate_nonce(length:int=16):
-  return "".join(secrets.choice(string.ascii_letters + string.digits) for i in range(length))
+  return "".join(
+      secrets.choice(string.ascii_letters + string.digits)
+      for _ in range(length))
 
 def get_config_path():
   if os.name == "nt":
@@ -200,8 +201,7 @@ class Client:
   
   def get_device_id(self):
     user_id = self.viewer["poeUser"]["id"]
-    device_id = get_saved_device_id(user_id)
-    return device_id
+    return get_saved_device_id(user_id)
     
   def extract_formkey(self, html):
     script_regex = r'<script>if\(.+\)throw new Error;(.+)</script>'
@@ -215,9 +215,7 @@ class Client:
     for pair in cipher_pairs:
       formkey_index, key_index = map(int, pair)
       formkey_list[formkey_index] = key_text[key_index]
-    formkey = "".join(formkey_list)[:-1] # credit to @aditiaryan on realizing my mistake
-    
-    return formkey
+    return "".join(formkey_list)[:-1]
 
   def get_next_data(self, overwrite_vars=False):
     logger.info("Downloading next_data...")
@@ -240,13 +238,11 @@ class Client:
   
   def get_bot(self, handle):
     url = f'https://poe.com/_next/data/{self.next_data["buildId"]}/{handle}.json'
-    
+
     data = request_with_retries(self.session.get, url).json()
-    if "payload" in data["pageProps"]:
-      chat_data = data["pageProps"]["payload"]["chatOfBotHandle"]
-    else:
-      chat_data = data["pageProps"]["data"]["chatOfBotHandle"]
-    return chat_data
+    return (data["pageProps"]["payload"]["chatOfBotHandle"]
+            if "payload" in data["pageProps"] else
+            data["pageProps"]["data"]["chatOfBotHandle"])
     
   def get_bots(self, download_next_data=True):
     logger.info("Downloading all bots...")
@@ -255,7 +251,7 @@ class Client:
     else:
       next_data = self.next_data
 
-    if not "availableBotsConnection" in self.viewer:
+    if "availableBotsConnection" not in self.viewer:
       raise RuntimeError("Invalid token or no bots are available.")
     bot_list_url = f'https://poe.com/_next/data/{self.next_data["buildId"]}/index.json'
     bot_list = self.viewer["availableBotsConnection"]["edges"]
@@ -270,14 +266,14 @@ class Client:
     for bot in bot_list:
       thread = threading.Thread(target=get_bot_thread, args=(bot,), daemon=True)
       threads.append(thread)
-    
+
     for thread in threads:
       thread.start()
     for thread in threads:
       thread.join()
-    
+
     self.bots = bots
-    self.bot_names = self.get_bot_names()          
+    self.bot_names = self.get_bot_names()
     return bots
   
   def get_bot_by_codename(self, bot_codename):
@@ -340,7 +336,7 @@ class Client:
     if channel is None:
       channel = self.channel
     query = f'?min_seq={channel["minSeq"]}&channel={channel["channel"]}&hash={channel["channelHash"]}'
-    return f'wss://{self.ws_domain}.tch.{channel["baseHost"]}/up/{channel["boxName"]}/updates'+query
+    return f'wss://{self.ws_domain}.tch.{channel["baseHost"]}/up/{channel["boxName"]}/updates{query}'
 
   def send_query(self, query_name, variables, attempts=20):
     for i in range(attempts):
@@ -348,27 +344,27 @@ class Client:
       payload = json.dumps(json_data, separators=(",", ":"))
 
       base_string = payload + self.gql_headers["poe-formkey"] + "WpuLMiXEKKE98j56k"
-      
+
       headers = {
         "content-type": "application/json",
         "poe-tag-id": hashlib.md5(base_string.encode()).hexdigest()
       }
       headers = {**self.gql_headers, **headers}
-      
+
       if query_name == "recv":
         r = request_with_retries(self.session.post, self.gql_recv_url, data=payload, headers=headers)
         return None
       else:
         r = request_with_retries(self.session.post, self.gql_url, data=payload, headers=headers)
-      
+
       data = r.json()
-      if data["data"] == None:
+      if data["data"] is None:
         logger.warn(f'{query_name} returned an error: {data["errors"][0]["message"]} | Retrying ({i+1}/20) | Response: {data}')
         time.sleep(2)
         continue
 
       return r.json()
-    
+
     raise RuntimeError(f'{query_name} failed too many times.')
   
   def subscribe(self):
@@ -472,7 +468,7 @@ class Client:
     try:
       data = json.loads(msg)
 
-      if not "messages" in data:
+      if "messages" not in data:
         return
 
       for message_str in data["messages"]:
@@ -494,8 +490,8 @@ class Client:
             self.message_queues[key].put(message)
             return
 
-          #indicate that the response id is tied to the human message id
-          elif key != "pending" and value == None and message["state"] != "complete":
+          elif (key != "pending" and value is None
+                and message["state"] != "complete"):
             self.active_messages[key] = message["messageId"]
             self.message_queues[key].put(message)
             return
@@ -572,11 +568,12 @@ class Client:
       message_id = message["messageId"]
 
       # set a suggestion callback on response
-      if callable(suggest_callback) and not message_id in self.suggestion_callbacks:
+      if (callable(suggest_callback)
+          and message_id not in self.suggestion_callbacks):
         self.suggestion_callbacks[message_id] = suggest_callback
 
       yield message
-    
+
     def recv_post_thread():
       bot_message_id = self.active_messages[human_message_id]
 
@@ -597,7 +594,7 @@ class Client:
         "bot_response_status": "success",
       })
       time.sleep(0.5)
-    
+
     t = threading.Thread(target=recv_post_thread, daemon=True)
     t.start()
     if not async_recv:
@@ -615,10 +612,10 @@ class Client:
 
   def get_message_history(self, chatbot, count=25, cursor=None):
     logger.info(f"Downloading {count} messages from {chatbot}")
-    
+
     messages = []
-    if cursor == None:
-      if not chatbot in self.bots:
+    if cursor is None:
+      if chatbot not in self.bots:
         chat_data = self.get_bot(chatbot)
       else:
         chat_data = self.get_bot(self.bot_names[chatbot])
@@ -652,7 +649,7 @@ class Client:
 
   def delete_message(self, message_ids):
     logger.info(f"Deleting messages: {message_ids}")
-    if not type(message_ids) is list:
+    if type(message_ids) is not list:
       message_ids = [int(message_ids)]
 
     result = self.send_query("DeleteMessageMutation", {
@@ -661,8 +658,7 @@ class Client:
   
   def purge_conversation(self, chatbot, count=-1):
     logger.info(f"Purging messages from {chatbot}")
-    last_messages = self.get_message_history(chatbot, count=50)[::-1]
-    while last_messages:
+    while last_messages := self.get_message_history(chatbot, count=50)[::-1]:
       message_ids = []
       for message in last_messages:
         if count == 0:
@@ -671,12 +667,10 @@ class Client:
         message_ids.append(message["node"]["messageId"])
 
       self.delete_message(message_ids)
-            
+
       if count == 0:
         return
-      last_messages = self.get_message_history(chatbot, count=50)[::-1]
-      
-    logger.info(f"No more messages left to delete.")
+    logger.info("No more messages left to delete.")
 
   def create_bot(self, handle, prompt, display_name=None, base_model="chinchilla", description="", 
                   intro_message="", api_key=None, api_bot=False, api_url=None,

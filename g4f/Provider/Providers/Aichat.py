@@ -7,12 +7,13 @@ supports_stream = False
 needs_auth = False
 
 def _create_completion(model: str, messages: list, stream: bool, **kwargs):
-    base = ''
-    for message in messages:
-        base += '%s: %s\n' % (message['role'], message['content'])
-    base += 'assistant:'
-    
-    
+    base = (
+        ''.join(
+            '%s: %s\n' % (message['role'], message['content'])
+            for message in messages
+        )
+        + 'assistant:'
+    )
     headers = {
         'authority': 'chat-gpt.org',
         'accept': '*/*',
@@ -36,7 +37,7 @@ def _create_completion(model: str, messages: list, stream: bool, **kwargs):
         'top_p': 1,
         'frequency_penalty': 0
     }
-    
+
     response = requests.post('https://chat-gpt.org/api/text', headers=headers, json=json_data)
     yield response.json()['message']
 

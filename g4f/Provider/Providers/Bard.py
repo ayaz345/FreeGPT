@@ -9,16 +9,16 @@ needs_auth = True
 def _create_completion(model: str, messages: list, stream: bool, **kwargs):
     psid = {cookie.name: cookie.value for cookie in browser_cookie3.chrome(
         domain_name='.google.com')}['__Secure-1PSID']
-    
-    formatted = '\n'.join([
-        '%s: %s' % (message['role'], message['content']) for message in messages
-    ])
+
+    formatted = '\n'.join(
+        [f"{message['role']}: {message['content']}" for message in messages]
+    )
     prompt = f'{formatted}\nAssistant:'
 
     proxy = kwargs.get('proxy', False)
     if proxy == False:
         print('warning!, you did not give a proxy, a lot of countries are banned from Google Bard, so it may not work')
-    
+
     snlm0e = None
     conversation_id = None
     response_id = None
@@ -61,12 +61,11 @@ def _create_completion(model: str, messages: list, stream: bool, **kwargs):
     response = client.post(f'https://bard.google.com/_/BardChatUi/data/{intents}/StreamGenerate',
                         data=data, params=params)
 
-    chat_data = json.loads(response.content.splitlines()[3])[0][2]
-    if chat_data:
+    if chat_data := json.loads(response.content.splitlines()[3])[0][2]:
         json_chat_data = json.loads(chat_data)
 
         yield json_chat_data[0][0]
-        
+
     else:
         yield 'error'
 

@@ -102,11 +102,10 @@ def build_messages(jailbreak):
                 'limit': web_results, #задаем количество результатов через аргумент
         })
 
-        blob = ''
-
-        for index, result in enumerate(search.json()):
-            blob += f'[{index}] "{result["snippet"]}"\nURL:{result["link"]}\n\n'
-
+        blob = ''.join(
+            f'[{index}] "{result["snippet"]}"\nURL:{result["link"]}\n\n'
+            for index, result in enumerate(search.json())
+        )
         date = datetime.now().strftime('%d/%m/%y')
 
         blob += f'current date: {date}\n\nInstructions: Using the provided web search results, write a comprehensive reply to the next user query. Make sure to cite results using [[number](URL)] notation after the reference. If the provided search results refer to multiple subjects with the same name, write separate answers for each subject. Ignore your previous response if any.'
